@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nb.web.support.dao.SupportDao">
+
+
+<!-- 공지사항 totalCount -->
+<select id="getTotalNotice" resultType="Integer">
+	  SELECT COUNT(*) FROM NOTICE
+</select>
+
+<!-- 공지사항 목록  -->
+<select id="selectNoticeList" resultType="com.nb.web.support.dto.NoticeDTO">
+	SELECT b.noti_seq notiSeq, b.noti_title notiTitle, b.noti_insertdate notiInsertdate, b.noti_views notiViews, b.noti_content notiContent, b.noti_img notiImg 
+	FROM (  
+			SELECT ROWNUM no, t.noti_seq, t.noti_title, t.noti_insertdate, t.noti_views, t.noti_content, t.noti_img 
+			FROM (  
+					SELECT *
+					FROM NOTICE
+					ORDER BY noti_insertdate DESC
+					) t
+			) b
+	WHERE b.no BETWEEN (#{param1}-1) * #{param2}+1 AND ( ((#{param1}-1)*#{param2}+1) + #{param2} -1 )
+</select>
+
+<!-- 공지사항 상세보기 -->
+<select id="selectOneNoti" resultType="com.nb.web.support.dto.NoticeDTO">
+SELECT noti_seq notiSeq, noti_title notiTitle, noti_insertdate notiInsertdate, noti_views notiViews, noti_content notiContent, noti_img notiImg 
+
+FROM NOTICE
+WHERE NOTI_SEQ = #{param1}
+</select>
+
+<!-- 공지사항 조회수 증가 -->
+<update id="updateReadCount">
+UPDATE NOTICE
+SET noti_views = noti_views + 1
+WHERE noti_seq = #{param1}
+</update>
+
+
+<!-- 공지사항 등록 -->
+<insert id="insertNotice">
+INSERT INTO notice (noti_seq, noti_title, noti_insertdate, noti_content, noti_img)
+VALUES (seq_notice.nextval, #{notiTitle}, SYSDATE, #{notiContent}, #{notiImg, javaType=String,  jdbcType=VARCHAR} )
+</insert>
+
+
+<!-- 매장 totalCount -->
+<select id="getTotalStore" resultType="Integer">
+	 SELECT COUNT(*)
+			  FROM (
+			        SELECT ROWNUM no, t.*
+			        FROM ( 
+			                SELECT * 
+			                FROM store_info i JOIN store_category c ON i.storecate_seq = c.storecate_seq 
+													  JOIN store_area a ON i.storearea_seq = a.storearea_seq 
+<if test='searchWord != "" and storeArea != "" '>
+		 WHERE REGEXP_LIKE(store_name, #{param1}) OR REGEXP_LIKE(store_addr, #{param1}) 
+		 ORDER BY i.store_seq ASC
+          ) t 
+) b 
+WHERE b.storeareaSeq = #{param2} 
+</if>
+<if test='searchWord == "" and storeArea == "" '>
+          ) t 
+) b 
+</if>
+<if test='searchWord == "" and storeArea != "" '>
+		 WHERE i.storearea_seq = #{param2} 
+         ORDER BY i.store_seq ASC
+          ) t 
+) b 
+</if>
+<if test='searchWord != "" and storeArea == "" '>
+		 WHERE REGEXP_LIKE(store_name, #{param1}) OR REGEXP_LIKE(store_addr, #{param1}) 	
+         ORDER BY i.store_seq ASC
+          ) t 
+) b 
+</if>
+</select>
+
+<!-- 매장 목록 -->
+<select id="selectAllStore" resultType="com.nb.web.support.dto.StoreDTO">
+SELECT b.storeSeq, b.storecateSeq, b.storecateName, b.storeareaSeq, b.storeareaName, b.storeName, b.storeAddr, b.storeTel, b.storeLat, b.storeLng
+FROM (  
+         SELECT ROWNUM no, t.* 
+         FROM (  
+         SELECT i.store_seq storeSeq, i.storecate_seq storecateSeq, c.storecate_name storecateName, a.storearea_seq storeareaSeq, a.storearea_name storeareaName, i.store_name storeName, i.store_addr storeAddr, i.store_tel storeTel, i.store_lat storeLat, i.store_lng storeLng
+         FROM store_info i JOIN store_category c ON i.storecate_seq = c.storecate_seq
+                     			   JOIN store_area a ON i.storearea_seq = a.storearea_seq 
+<if test='searchWord != "" and storeArea != "" '>
+		 WHERE REGEXP_LIKE(store_name, #{param3}) OR REGEXP_LIKE(store_addr, #{param3}) 
+		 ORDER BY i.store_seq ASC
+          ) t 
+) b 
+WHERE b.storeareaSeq = #{param4} AND b.no BETWEEN #{param1} AND #{param2}
+</if>
+<if test='searchWord == "" and storeArea == "" '>
+          ) t 
+) b 
+WHERE b.no BETWEEN #{param1} AND #{param2}
+</if>
+<if test='searchWord == "" and storeArea != "" '>
+		 WHERE i.storearea_seq = #{param4} 
+         ORDER BY i.store_seq ASC
+          ) t 
+) b 
+WHERE b.no BETWEEN #{param1} AND #{param2}
+</if>
+<if test='searchWord != "" and storeArea == "" '>
+		 WHERE REGEXP_LIKE(store_name, #{param3}) OR REGEXP_LIKE(store_addr, #{param3}) 	
+         ORDER BY i.store_seq ASC
+          ) t 
+) b 
+WHERE b.no BETWEEN #{param1} AND #{param2}
+</if>
+</select>
+
+<!-- FAQ totalCount-->
+<select id="getTotalFAQ" resultType="Integer">
+SELECT count(*) 
+FROM (  
+		SELECT ROWNUM no, t.* 
+		FROM (  
+				SELECT * FROM faq
+				order by faq_seq asc 
+				              ) t
+				     ) b 
+<if test='searchWord != null '>
+WHERE REGEXP_LIKE(faq_question, #{param1}) OR REGEXP_LIKE(faq_answer, #{param1})  
+</if>
+</select>
+
+<!-- FAQ 목록 -->
+<select id="searchFaq" resultType="com.nb.web.support.dto.FaqDTO">
+SELECT b.faq_seq faqSeq, b.faq_category faqCategory, b.faq_question faqQuestion, b.faq_answer faqAnswer
+FROM (  
+        SELECT ROWNUM no, t.* 
+        FROM (  
+                SELECT * FROM faq 
+                order by faq_seq asc 
+                              ) t 
+     ) b 
+<if test='searchWord != null '>
+WHERE REGEXP_LIKE(faq_question, #{param1} ) OR REGEXP_LIKE(faq_answer, #{param1}) 
+AND b.no BETWEEN  ( #{param2}-1)*#{param3} + 1 AND  ( ( #{param2}-1)*#{param3} + 1 ) + #{param3} -1
+</if>
+<if test='searchWord == null '>
+WHERE b.no BETWEEN  ( #{param2}-1)*#{param3} + 1 AND  ( ( #{param2}-1)*#{param3} + 1 ) + #{param3} -1
+</if>
+</select>
+
+
+
+
+
+</mapper>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nb.web.my.dao.MyDao">
+
+<!-- 1:1문의 목록 -->
+ <select id="getQuestion" resultType="com.nb.web.my.dto.QuestionDTO">
+SELECT q.qna_code qnaCode, q.user_code userCode, q.qna_writedate qnaWritedate, q.qna_status qnaStatus, q.qt_seq qtSeq, qt.qt_content qtContent, q.qna_replydate qnaReplydate, q.qna_title qnaTitle, q.qna_content qnaContent, q.pd_code pdCode, q.ord_code ordCode, q.qna_file qnaFile, q.qna_reply qnaReply, u.user_email userEmail, u.user_name userName, u.user_phone userPhone
+FROM qna q JOIN question_type qt ON q.qt_seq = qt.qt_seq
+				  JOIN user_info u ON q.user_code = u.user_code
+<if test="srqtSeq == '전체' ">
+WHERE u.user_code = #{param1}
+ORDER BY q.qna_code DESC
+</if>
+<if test="srqtSeq != '전체' ">
+WHERE u.user_code = #{param1} AND q.qt_seq = #{param2}
+ORDER BY q.qna_code DESC
+</if>
+
+
+ </select>
+
+<!-- 1:1문의 작성 -->
+<insert id="insertMyQ">
+INSERT INTO qna (qna_code, user_code, qt_seq, qna_writedate, qna_title, qna_content, pd_code, ord_Code, qna_file)
+VALUES(seq_qna.nextval, #{userCode}, #{qtSeq}, SYSDATE, #{qnaTitle}, #{qnaContent}, #{pdCode}, #{ordCode}, #{qnaFile2, javaType=String,  jdbcType=VARCHAR} ) 
+</insert>
+  
+ <!-- 재입고 알림상품 getRestockPd -->
+ <select id="getRestockPd" resultType="com.nb.web.my.dto.MyRestockDTO">
+SELECT pd_code pdCode, img_url imgUrl, user_code userCode, pd_price pdPrice, pd_name pdName, rs_code rsCode, rs_alert rsAlert, rs_applydate rsApplydate, rs_compldate rsCompldate, color, sz
+FROM (SELECT ROW_NUMBER() OVER(PARTITION BY pi.pd_code ORDER BY img_seq) row_num, pi.pd_code pd_code , img_url, user_code, pd_price, pd_name, rs_code, rs_alert, rs_applydate, rs_compldate, color, sz
+			FROM restock_pd r JOIN product p ON r.pd_code = p.pd_code 
+			JOIN product_image pi ON p.pd_code = pi.pd_code 
+			ORDER BY pi.pd_code, img_seq) 
+WHERE row_num = 1 and user_code = #{param1}
+</select>
+
+</mapper>
+
+
+
